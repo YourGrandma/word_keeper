@@ -2,6 +2,8 @@ export const addFavoriteItem = ( { dispatch, commit, state }, word ) => {
 
     commit( 'ADD_FAVORITE', word );
 
+    commit( 'SET_STORAGE' );
+
     dispatch( 'saveFavorites' )
 
 };
@@ -10,6 +12,7 @@ export const removeFavoriteItem = ( { dispatch, commit, state }, id ) => {
 
     commit( 'REMOVE_FAVORITE', id );
 
+    commit( 'SET_STORAGE' );
 
 };
 
@@ -22,6 +25,8 @@ export const fetchFavorites = ( { dispatch, commit, state } ) => {
 export const arrangeFavorites = ( { dispatch, commit, state }, payload ) => {
 
     commit( 'ARRANGE_FAVORITES', payload )
+
+    commit( 'SET_STORAGE' );
 
     // dispatch( 'saveFavorites' )
 
