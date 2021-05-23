@@ -70,30 +70,37 @@ export default {
 
             this.searchWord = this.$route.query.filter || this.$store.getters[ 'words/favorites/getFilter' ]
 
-            this.$router.push({
+            if (!this.$route.query.hasOwnProperty('filter') || !this.$route.query.hasOwnProperty('class')) {
 
-                query: {
+                this.$router.push({
 
-                    'filter': this.searchWord,
-                    'class': String( this.selectedClass )
+                    query: {
 
-                }
+                        'filter': this.searchWord,
+                        'class': String( this.selectedClass )
 
-            })
+                    }
 
+                })
+
+            }
 
         } else {
             this.searchWord = this.$route.query.search || this.$store.getters[ 'words/favorites/getSearch' ]
 
-            this.$router.push({
+            if (!this.$route.query.hasOwnProperty('search')) {
 
-                query: {
+                this.$router.push({
 
-                    'search': this.searchWord
+                    query: {
 
-                }
+                        'search': this.searchWord
 
-            })
+                    }
+
+                })
+
+            }
 
         }
 
