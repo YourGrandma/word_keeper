@@ -1,61 +1,31 @@
 <template>
 
-    <div class="results" v-if="!favorites">
-        <!-- .sort() -->
+    <div class="results">
+
+        <div v-if="computedList.length == 0">
+            <p v-if="$route.name == 'Home'">No results. Try another word.</p>
+            <p v-if="$route.name == 'Favorites'">No favorites. Try to add some.</p>
+
+        </div>
+
         <div
-            v-for="(item, index) in sortedList"
+            v-else
+            v-for="(item, index) in computedList"
             :key="index" @click="item.expanded = !item.expanded"
 
             class="results__item">
 
             <div class="results__item__wrapper" :class="{ 'results__item__wrapper--expanded': item.expanded}">
 
-                <div class="results__item--phrase">{{item.phrase}}</div>
-
-                <div class="results__item--type">{{item.type}}</div>
-
-                <div class="results__item--description">{{item.description}}</div>
-
-                <div class="results__item__icon" @click.stop="onFavoriteClick(item);">
-
-                    <FavoriteIcon :active="favoriteIDs.includes(item.uuid)" />
-
-                </div>
-
-            </div>
-
-            <div v-if="item.expanded" class="results__item__expansion">
-
-                <div>
-                    Transcription: <span class="results__item--transcription">{{item.transcription || 'none'}}</span>
-                </div>
-
-                <div>
-                    Other variants: <span class="results__item--variants">{{String(item.variants)}}</span>
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="results" v-else>
-
-        <div
-            v-for="(item, index) in favoritesList"
-            :key="index"
-            @click="item.expanded = !item.expanded"
-            class="results__item">
-
-            <div class="results__item__wrapper" :class="{ 'results__item__wrapper--expanded': item.expanded}">
-
                 <div
+                    v-if="$route.name == 'Favorites'"
                     @dragstart="dragStart( item, index, $event )"
                     @dragover="dragOver( item, index, $event )"
                     @dragend="dragEnd( item, index, $event )"
                     draggable="true"
-                    class="results__item--phrase">DRAG ME</div>
+                    class="results__item--phrase">
+                    <drag-button-icon />
+                </div>
 
                 <div class="results__item--phrase">{{item.phrase}}</div>
 
@@ -65,7 +35,7 @@
 
                 <div class="results__item__icon" @click.stop="onFavoriteClick(item);">
 
-                    <FavoriteIcon :active="favoriteIDs.includes(item.uuid)" />
+                    <favorite-icon :active="favoriteIDs.includes(item.uuid)" />
 
                 </div>
 
@@ -86,13 +56,13 @@
         </div>
 
     </div>
-
 
 </template>
 
 <script>
 
 import FavoriteIcon from './FavoriteIcon'
+import DragButtonIcon from './DragButtonIcon'
 
 export default {
 
@@ -100,6 +70,7 @@ export default {
     components: {
 
         FavoriteIcon,
+        DragButtonIcon,
 
     },
     props: {
@@ -134,6 +105,24 @@ export default {
     }),
 
     computed: {
+
+        computedList() {
+
+            if (this.$route.name == 'Home') {
+
+                return this.sortedList
+
+            } else if (this.$route.name == 'Favorites') {
+
+                return this.favoritesList
+
+            } else {
+
+                return []
+
+            }
+
+        },
 
         sortedList() {
 
@@ -274,81 +263,86 @@ export default {
         },
         fetchResult ( searchWord, single = false ) {
 
-            this.$http.get(searchWord, {
+            if ( searchWord ) {
 
-                params: {
+                this.$http.get(searchWord, {
 
-                    key: this.key,
+                    params: {
 
-                }
+                        key: this.key,
 
-            }).then((response) => {
+                    }
 
-                if ( typeof response.data[0] == 'string' ) {
+                }).then((response) => {
 
-                    let filteredArray = response.data.filter((item, index, array) => {
+                    if ( typeof response.data[0] == 'string' ) {
 
-                        return item.includes(searchWord)
+                        let filteredArray = response.data.filter((item, index, array) => {
 
-                    })
+                            return item.includes(searchWord)
 
-                    filteredArray.map((item, index) => {
+                        })
 
-                        this.fetchResult( item, true )
+                        filteredArray.map((item, index) => {
 
-                    })
+                            this.fetchResult( item, true )
 
-                } else {
-
-                    if ( single ) {
-
-                        
-                        let item = response.data[0],
-                            _obj = {
-
-                                uuid: item.meta.uuid,
-                                phrase: item.meta.stems[0],
-                                type: item.fl,
-                                description: item.shortdef[0],
-                                transcription: !!item.hwi.prs ? item.hwi.prs[0].mw : null,
-                                variants: item.meta.stems,
-                                expanded: false,
-
-                            },
-                            stringArray = this.searchList.map( item => JSON.stringify(item) )
-
-                        if ( !stringArray.includes( JSON.stringify( _obj ) ) ) {
-
-                            this.searchList.push( _obj )
-
-                        }
+                        })
 
                     } else {
 
-                        response.data.map((item, index) => {
+                        if ( single ) {
 
-                            if ( index < 10 && (item.meta.stems[0].includes(searchWord))) {
 
-                                this.searchList.push({
+                            let item = response.data[0],
+                                _obj = {
 
                                     uuid: item.meta.uuid,
                                     phrase: item.meta.stems[0],
                                     type: item.fl,
                                     description: item.shortdef[0],
-                                    transcription: !!item.hwi.prs ? item.hwi.prs[0].mw : null,                                    variants: item.meta.stems,
+                                    transcription: !!item.hwi.prs ? item.hwi.prs[0].mw : null,
+                                    variants: item.meta.stems,
                                     expanded: false,
 
-                                })
+                                },
+                                stringArray = this.searchList.map( item => JSON.stringify(item) )
+
+                            if ( !stringArray.includes( JSON.stringify( _obj ) ) ) {
+
+                                this.searchList.push( _obj )
 
                             }
 
-                        })
+                        } else {
+
+                            response.data.map((item, index) => {
+
+                                if ( index < 10 && (item.meta.stems[0].includes(searchWord))) {
+
+                                    this.searchList.push({
+
+                                        uuid: item.meta.uuid,
+                                        phrase: item.meta.stems[0],
+                                        type: item.fl,
+                                        description: item.shortdef[0],
+                                        transcription: !!item.hwi.prs ? item.hwi.prs[0].mw : null,
+                                        variants: item.meta.stems,
+                                        expanded: false,
+
+                                    })
+
+                                }
+
+                            })
+
+                        }
 
                     }
 
-                }
+                })
 
-            })
+            }
 
         }
 
